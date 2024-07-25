@@ -1,0 +1,83 @@
+function format(n: number) :: text:
+    set {_data} to "e+3,99|e+2,65|e+1,42|Sp,24|Sx,21|QT,18|Q,15|T,12|B,9|M,6|k,3"
+    loop split {_data} at "|":
+        set {_s::*} to split loop-value at ","
+        {_n} >= 10 ^ {_s::2} parsed as number
+        return "%{_n} / 10 ^ {_s::2} parsed as number%%{_s::1}%"
+    return "%{_n}%"
+
+function sort(indices: strings, values: numbers, descending: boolean = true) :: strings:
+    loop {_indices::*}:
+        add 1 to {_f}
+        set {_sort::%{_values::%loop-index%}%.%{_f}%} to loop-value
+    return (reversed {_sort::*}) if {_descending} is true, else {_sort::*}
+
+function regex(n: object) :: text:
+    if "%{_n}%" contains ".":
+        set {_s::*} to split "%{_n}%" at "."
+        set {_n} to "%a({_s::1})%.%last 2 characters of {_s::2}%"
+        return "%{_n}%"
+    else:
+        set {_n} to a("%{_n}%")
+        return "%{_n} ? 0%"
+
+function unformatregex(n: object) :: number:
+    replace all "," with "" in {_n}
+    return ({_n} parsed as number)
+
+function a(b: text) :: text:
+    if length of {_b} > 3:
+        return "%a(first length of {_b} - 3 characters of {_b})%,%last 3 characters of {_b}%"
+    return {_b}
+
+function capslock(t: text) :: text:
+    set {_text::*} to {_t} split at ""
+    loop {_text::*}:
+        add "%loop-value in proper case%" to {_output::*}
+    
+    loop {_output::*}:
+        set {_text} to "%{_text} ? ""%%loop-value%"
+    return {_text}
+
+function hex(values: numbers) :: text:
+    set {_h::*} to split "&0|&1|&2|&3|&4|&5|&6|&7|&8|&9|&a|&b|&c|&d|&e|&f" at "|"
+    loop {_values::*}:
+        set {_r} to "%{_r} ? "&x"%%{_h::%((loop-value - mod(loop-value, 16)) / 16 + 1)%} ? """"%%{_h::%mod(loop-value, 16) + 1%} ? """"%"
+    return {_r}
+function hue(p: num, q: num, t: num) :: num:
+    add 1 to {_t} if {_t} < 0
+    remove 1 from {_t} if {_t} > 1
+    return {_p} + ({_q} - {_p}) * 6 * {_t} if {_t} < 1 / 6
+    return {_q} if {_t} < 1/2
+    return {_p} + ({_q} - {_p}) * (2 / 3 - {_t}) * 6 if {_t} < 2 / 3
+    return {_p}
+function hsl(h: num, s: num, l: num) :: ints:
+    set {_h} to {_h}/360
+    {_s} = 0:
+        set {_r}, {_g} and {_b} to {_l}
+    else:
+        set {_q} to (({_l} * ({_s} + 1)) if {_l} < 0.5, else ({_l} + {_s} - {_l} * {_s}))
+        set {_p} to (2 * {_l}) - {_q}
+        set {_r} to hue({_p}, {_q}, {_h} + 1 / 3)
+        set {_g} to hue({_p}, {_q}, {_h})
+        set {_b} to hue({_p}, {_q}, {_h} - 1 / 3)
+    return round(min(255, (255 * {_r}))), round(min(255, (255 * {_g}))) and round(min(255, (255 * {_b})))
+function gradient(input: text, color-from: nums, color-to: nums) :: text:
+    loop {_color-from::*}: 
+        set {_i::%loop-index%} to round(({_color-to::%loop-index%} - loop-value) / length of {_input})
+    loop length of {_input} times:
+        set {_r} to "%{_r} ? """"%%hex({_color-from::*})%%subtext of {_input} from indices loop-number to loop-number%"
+        set {_color-from::*} to ({_color-from::1} + {_i::1}), ({_color-from::2} + {_i::2}) and ({_color-from::3} + {_i::3})
+    return colored {_r}
+function rainbow(input: text, s: number = 1, li: number = 0.5) :: string:
+    set {_l} to 360 / (length of {_input})
+    loop (length of {_input}) times:
+        set {_r} to "%{_r} ? """"%%hex(hsl((loop-number * ({_l} if loop-number != 1, else 1)), {_s}, {_li}))%%subtext of {_input} from indices loop-number to loop-number%"
+        replace all """" in {_r} with ""
+    return colored {_r}
+function rainbowbold(input: text, s: number = 1, li: number = 0.5) :: string:
+    set {_l} to 360 / (length of {_input})
+    loop (length of {_input}) times:
+        set {_r} to "%{_r} ? """"%%hex(hsl((loop-number * ({_l} if loop-number != 1, else 1)), {_s}, {_li}))%%subtext of {_input} from indices loop-number to loop-number%"
+        replace all """" in {_r} with ""
+    return colored {_r}
